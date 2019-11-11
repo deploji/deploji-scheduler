@@ -1,60 +1,84 @@
 package com.deploji.scheduler.utils;
 
-import com.deploji.scheduler.models.*;
+import com.deploji.scheduler.models.Daily;
+import com.deploji.scheduler.models.Monthly;
+import com.deploji.scheduler.models.Schedule;
+import com.deploji.scheduler.models.Weekly;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.TriggerContext;
 
-import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 public class CustomScheduleTrigger implements Trigger {
     private Schedule schedule;
-    private Clock clock;
 
-    public CustomScheduleTrigger(Schedule schedule, Clock clock) {
+    public CustomScheduleTrigger(Schedule schedule) {
         this.schedule = schedule;
-        this.clock = clock;
     }
 
     @Override
     public Date nextExecutionTime(TriggerContext triggerContext) {
         ZonedDateTime start = schedule.getStartFrom();
+        ZonedDateTime next = start;
         ZonedDateTime end = schedule.getEndOn();
-        ZonedDateTime now = ZonedDateTime.now(clock);
-        if (end != null && end.isBefore(now)) {
-            return null;
-        }
+        ZonedDateTime last = triggerContext.lastScheduledExecutionTime() == null ?
+            null : ZonedDateTime.from(triggerContext.lastScheduledExecutionTime().toInstant().atZone(ZoneId.systemDefault()));
         if (schedule.getDaily() != null) {
-            return nextExecutionTime(start, now, schedule.getDaily());
+            next = nextExecutionTime(start, last, schedule.getDaily());
         }
         if (schedule.getWeekly() != null) {
-            return nextExecutionTime(start, now, schedule.getWeekly());
+            next = nextExecutionTime(start, last, schedule.getWeekly());
         }
         if (schedule.getMonthly() != null) {
-            return nextExecutionTime(start, now, schedule.getMonthly());
+            next = nextExecutionTime(start, last, schedule.getMonthly());
         }
-        return null;
-    }
-
-    public Date nextExecutionTime(ZonedDateTime start, ZonedDateTime now, Monthly monthly) {
-        return null;
-    }
-
-    public Date nextExecutionTime(ZonedDateTime start, ZonedDateTime now, Weekly weekly) {
-        return null;
-    }
-
-    public Date nextExecutionTime(ZonedDateTime start, ZonedDateTime now, Daily daily) {
-        if (start.isAfter(now)) {
+        if (next == null || next.isAfter(end)) {
+            return null;
+        }
+        if (next.isBefore(start)) {
             return Date.from(start.toInstant());
         }
-        long diff = ChronoUnit.DAYS.between(start, now);
-        ZonedDateTime next = start.plusDays(diff);
-        if (next.isBefore(now)) {
-            next = next.plusDays(1L);
-        }
         return Date.from(next.toInstant());
+    }
+
+    public ZonedDateTime nextExecutionTime(ZonedDateTime start, ZonedDateTime last, Monthly monthly) {
+        ZonedDateTime next;
+        if (last == null) {
+            next = start.withDayOfMonth(monthly.getDayOfMonth());
+            if (next.isBefore(start)) {
+                next = next.plusMonths(1);
+            }
+        } else {
+            next = last.plusMonths(1);
+        }
+        while (!monthly.getMonths().contains(next.getMonth())) {
+            next = next.plusMonths(1);
+        }
+        return next;
+    }
+
+    public ZonedDateTime nextExecutionTime(ZonedDateTime start, ZonedDateTime last, Weekly weekly) {
+        DayOfWeek lastDayOfWeek = DayOfWeek.SUNDAY;
+        ZonedDateTime next = last == null ? start : last.plusDays(1);
+        if (weekly.getWeekdays().isEmpty()) {
+            throw new IllegalStateException("weekdays must contain at least one day");
+        }
+        while (!weekly.getWeekdays().contains(next.getDayOfWeek())) {
+            next = next.plusDays(1);
+            if (next.getDayOfWeek() == lastDayOfWeek) {
+                next = next.plusWeeks(weekly.getEvery() - 1L).plusDays(1);
+            }
+        }
+        return next;
+    }
+
+    public ZonedDateTime nextExecutionTime(ZonedDateTime start, ZonedDateTime last,  Daily daily) {
+        if (last == null) {
+            return start;
+        }
+        return last.plusDays(daily.getEvery());
     }
 }

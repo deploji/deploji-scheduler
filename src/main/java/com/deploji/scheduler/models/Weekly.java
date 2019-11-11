@@ -1,5 +1,6 @@
 package com.deploji.scheduler.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import javax.validation.constraints.Min;
@@ -12,8 +13,11 @@ import java.util.List;
 public class Weekly {
     @NotNull
     @Min(1)
+    @JsonProperty("Every")
     private Integer every;
+
     @NotNull
     @Size(min = 1, max = 7)
+    @JsonProperty("Weekdays")
     private List<DayOfWeek> weekdays;
 }

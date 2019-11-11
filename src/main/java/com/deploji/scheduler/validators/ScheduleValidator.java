@@ -18,12 +18,6 @@ public class ScheduleValidator implements Validator {
         ValidationUtils.rejectIfEmpty(e, "startFrom", "startFrom.empty");
         ValidationUtils.rejectIfEmpty(e, "job", "job.empty");
         Schedule s = (Schedule) obj;
-        if (s.getCronExpression() == null &&
-            s.getMonthly() == null &&
-            s.getWeekly() == null &&
-            s.getDaily() == null) {
-            e.reject("one-required", "one of the fields is required: daily, weekly, monthly, cronExpression");
-        }
         if (checkExclusive(s.getCronExpression(), s.getMonthly(), s.getWeekly(), s.getDaily())) {
             e.reject("exclusive", "the fields: daily, weekly, monthly, cronExpression are exclusive");
         }

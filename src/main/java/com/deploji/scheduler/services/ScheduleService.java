@@ -1,13 +1,21 @@
 package com.deploji.scheduler.services;
 
+import com.deploji.scheduler.jwt.AuthFacade;
 import com.deploji.scheduler.models.Schedule;
 import com.deploji.scheduler.repositories.ScheduleRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 public class ScheduleService {
+    private Logger logger = LoggerFactory.getLogger(ScheduleService.class);
     private ScheduleRepository repository;
     private JobScheduler scheduler;
 
@@ -21,7 +29,13 @@ public class ScheduleService {
     }
 
     public Mono<Schedule> save(Schedule schedule) {
-        return this.repository.save(schedule).doOnNext(s -> scheduler.schedule(s));
+        return Mono.zip(this.repository.save(schedule), AuthFacade.getUser())
+            .map((objects) -> {
+                logger.info("{}", objects.getT2().getId());
+                objects.getT1().getJob().setUserID(objects.getT2().getId());
+                return objects.getT1();
+            })
+            .doOnNext(s -> scheduler.schedule(s));
     }
 
     public Mono<Void> delete(String id) {

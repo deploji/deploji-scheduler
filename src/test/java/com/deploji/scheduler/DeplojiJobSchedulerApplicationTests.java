@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class DeplojiJobSchedulerApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void  contextLoads() {
 	}
 
 }

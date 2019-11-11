@@ -2,17 +2,15 @@ package com.deploji.scheduler.services;
 
 import com.deploji.scheduler.models.Schedule;
 import com.deploji.scheduler.repositories.ScheduleRepository;
-import com.deploji.scheduler.tasks.CreateJobTask;
+import com.deploji.scheduler.tasks.TaskFactory;
 import com.deploji.scheduler.utils.CustomScheduleTrigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
 
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -21,12 +19,12 @@ import java.util.concurrent.ScheduledFuture;
 public class JobScheduler {
     private Logger logger = LoggerFactory.getLogger(JobScheduler.class);
     private TaskScheduler scheduler;
-    @Value("${deploji.api.url}")
-    private String apiUrl;
+    private TaskFactory taskFactory;
     private Map<String, ScheduledFuture> futures = new HashMap<>();
 
-    public JobScheduler(TaskScheduler scheduler, ScheduleRepository repository) {
+    public JobScheduler(TaskScheduler scheduler, ScheduleRepository repository, TaskFactory taskFactory) {
         this.scheduler = scheduler;
+        this.taskFactory = taskFactory;
         logger.info("Scheduling jobs from database");
         repository.findAll().subscribe(this::schedule);
     }
@@ -38,9 +36,9 @@ public class JobScheduler {
             trigger = new CronTrigger(schedule.getCronExpression());
         } else {
             logger.info("Scheduling job {} with schedule {}", schedule.getJob(), schedule);
-            trigger = new CustomScheduleTrigger(schedule, Clock.systemDefaultZone());
+            trigger = new CustomScheduleTrigger(schedule);
         }
-        ScheduledFuture future = this.scheduler.schedule(new CreateJobTask(schedule.getJob(), schedule, apiUrl), trigger);
+        ScheduledFuture future = this.scheduler.schedule(taskFactory.jobTask(schedule.getJob(), schedule), trigger);
         this.futures.put(schedule.getId(), future);
     }
 

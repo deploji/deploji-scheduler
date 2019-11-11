@@ -1,5 +1,6 @@
 package com.deploji.scheduler.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import javax.validation.constraints.Max;
@@ -14,8 +15,11 @@ public class Monthly {
     @NotNull
     @Min(1)
     @Max(31)
+    @JsonProperty("DayOfMonth")
     private Integer dayOfMonth;
+
     @NotNull
     @Size(min = 1)
+    @JsonProperty("Months")
     private List<Month> months;
 }
