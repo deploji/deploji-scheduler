@@ -8,6 +8,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.Valid;
 import java.time.ZonedDateTime;
+import java.util.Date;
+import java.util.List;
 
 @Data
 @Document
@@ -42,4 +44,7 @@ public class Schedule {
 
     @JsonProperty("CronExpression")
     private String cronExpression;
+
+    @JsonProperty("NextExecutionTimes")
+    private List<Date> nextExecutionTimes;
 }
