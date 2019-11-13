@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 public class ScheduleService {
     private Logger logger = LoggerFactory.getLogger(ScheduleService.class);
@@ -24,18 +26,27 @@ public class ScheduleService {
         this.scheduler = scheduler;
     }
 
-    public Flux<Schedule> findAll() {
-        return this.repository.findAll()
-            .map(schedule -> {
-                Trigger trigger;
-                if (schedule.getCronExpression() != null) {
-                    trigger = new CronTrigger(schedule.getCronExpression());
-                } else {
-                    trigger = new CustomScheduleTrigger(schedule);
-                }
-                schedule.setNextExecutionTimes(FakeTriggerContext.nextExecutionTimes(trigger));
-                return schedule;
-            });
+    public Flux<Schedule> findAll(List<Long> applicationId, List<Long> templateId) {
+        Flux<Schedule> schedules;
+        if (applicationId != null && templateId != null) {
+            schedules = this.repository.findAllByJobApplicationIDInAndJobTemplateIDIn(applicationId, templateId);
+        } else if (applicationId != null) {
+            schedules = this.repository.findAllByJobApplicationIDIn(applicationId);
+        } else if (templateId != null) {
+            schedules = this.repository.findAllByJobTemplateIDIn(templateId);
+        } else {
+            schedules = this.repository.findAll();
+        }
+        return schedules.map(schedule -> {
+            Trigger trigger;
+            if (schedule.getCronExpression() != null) {
+                trigger = new CronTrigger(schedule.getCronExpression());
+            } else {
+                trigger = new CustomScheduleTrigger(schedule);
+            }
+            schedule.setNextExecutionTimes(FakeTriggerContext.nextExecutionTimes(trigger));
+            return schedule;
+        });
     }
 
     public Mono<Schedule> save(Schedule schedule) {

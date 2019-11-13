@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping("/schedules")
@@ -29,8 +30,10 @@ public class SchedulesController {
     }
 
     @GetMapping
-    private Flux<Schedule> getAll() {
-        return service.findAll();
+    private Flux<Schedule> getAll(
+        @RequestParam(name = "ApplicationID", required = false) List<Long> applicationId,
+        @RequestParam(name = "TemplateID", required = false) List<Long> templateId) {
+        return service.findAll(applicationId, templateId);
     }
 
     @PostMapping
@@ -43,3 +46,4 @@ public class SchedulesController {
         return service.delete(id);
     }
 }
+
