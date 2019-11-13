@@ -1,13 +1,13 @@
-package com.deploji.deplojischeduler;
+package com.deploji.scheduler;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class DeplojiSchedulerApplicationTests {
+class DeplojiJobSchedulerApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void  contextLoads() {
 	}
 
 }
